@@ -172,6 +172,7 @@
   "Message_deleting_not_allowed" : "Exclusão de mensagem não permitido",
   "Message_editing_not_allowed" : "Edição de mensagem não permitido",
   "Message_editing_blocked" : "Esta mensagem não pode mais ser editada",
+  "Message_FileDownloadLoggedUsersOnly" : "Download de arquivos apenas para usuários autenticados",
   "Message_MaxAllowedSize" : "Tamanho máximo de mensagem permitido ",
   "Message_pinning_not_allowed" : "Não Permitir Fixar Mensagem",
   "Message_KeepHistory" : "Manter Histórico de Mensagens",
