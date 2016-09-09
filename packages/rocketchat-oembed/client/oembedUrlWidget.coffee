@@ -12,21 +12,35 @@ getDescription = (self) ->
 	if not description?
 		return
 
-	return description.replace /(^“)|(”$)/g, ''
+	return _.unescape description.replace /(^[“\s]*)|([”\s]*$)/g, ''
 
 
 Template.oembedUrlWidget.helpers
 	description: ->
-		return getDescription this
+		description = getDescription this
+		return Blaze._escape(description) if _.isString description
 
 	title: ->
-		return getTitle this
+		title = getTitle this
+		return Blaze._escape(title) if _.isString title
+
+	target: ->
+		if not this.parsedUrl?.host || !document?.location?.host || this.parsedUrl.host isnt document.location.host
+			return '_blank'
 
 	image: ->
 		if not this.meta?
 			return
 
-		return this.meta.ogImage or this.meta.twitterImage
+		decodedOgImage = @meta.ogImage?.replace?(/&amp;/g, '&')
+
+		return decodedOgImage or this.meta.twitterImage
 
 	show: ->
 		return getDescription(this)? or getTitle(this)?
+
+	collapsed: ->
+		if this.collapsed?
+			return this.collapsed
+		else
+			return Meteor.user()?.settings?.preferences?.collapseMediaByDefault is true

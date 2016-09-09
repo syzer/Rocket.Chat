@@ -1,12 +1,27 @@
-RocketChat.authz.hasPermission = (userId, permissionId, scope) ->
-	console.log '[methods] hasPermission -> '.green, 'arguments:', arguments
+atLeastOne = (userId, permissions, scope) ->
+	return _.some permissions, (permissionId) ->
+		permission = RocketChat.models.Permissions.findOne permissionId
+		RocketChat.models.Roles.isUserInRoles(userId, permission.roles, scope)
 
-	# get user's roles
-	roles = RocketChat.authz.getRolesForUser(userId, scope)
+all = (userId, permissions, scope) ->
+	return _.every permissions, (permissionId) ->
+		permission = RocketChat.models.Permissions.findOne permissionId
+		RocketChat.models.Roles.isUserInRoles(userId, permission.roles, scope)
 
-	# get permissions for user's roles
-	permissions = []
-	for role in roles
-		permissions = permissions.concat( RocketChat.authz.getPermissionsForRole( role ))
-	# may contain duplicate, but doesn't matter
-	return permissionId in permissions
+hasPermission = (userId, permissions, scope, strategy) ->
+	unless userId
+		return false
+
+	permissions = [].concat permissions
+
+	return strategy(userId, permissions, scope)
+
+
+
+RocketChat.authz.hasAllPermission = (userId, permissions, scope) ->
+	return hasPermission(userId, permissions, scope, all)
+
+RocketChat.authz.hasPermission = RocketChat.authz.hasAllPermission
+
+RocketChat.authz.hasAtLeastOnePermission = (userId, permissions, scope) ->
+	return hasPermission(userId, permissions, scope, atLeastOne)

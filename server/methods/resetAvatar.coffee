@@ -1,9 +1,10 @@
 Meteor.methods
 	resetAvatar: (image, service) ->
 		unless Meteor.userId()
-			throw new Meteor.Error(403, "[methods] resetAvatar -> Invalid user")
+			throw new Meteor.Error('error-invalid-user', 'Invalid user', { method: 'resetAvatar' });
 
-		console.log '[methods] resetAvatar -> '.green, 'userId:', Meteor.userId(), 'arguments:', arguments
+		unless RocketChat.settings.get("Accounts_AllowUserAvatarChange")
+			throw new Meteor.Error('error-not-allowed', 'Not allowed', { method: 'resetAvatar' });
 
 		user = Meteor.user()
 
@@ -13,3 +14,10 @@ Meteor.methods
 
 		RocketChat.Notifications.notifyAll 'updateAvatar', {username: user.username}
 		return
+
+# Limit changing avatar once per minute
+DDPRateLimiter.addRule
+	type: 'method'
+	name: 'resetAvatar'
+	userId: -> return true
+, 1, 60000

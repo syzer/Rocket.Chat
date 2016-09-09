@@ -4,13 +4,15 @@ RocketChat.TabBar = new class
 
 	buttons = new ReactiveVar {}
 
-	animating = false
+	extraGroups = {}
+
 	open = new ReactiveVar false
 	template = new ReactiveVar ''
 	data = new ReactiveVar {}
 
+	visibleGroup = new ReactiveVar ''
+
 	setTemplate = (t, callback) ->
-		return if animating is true
 		template.set t
 		openFlex(callback)
 
@@ -24,17 +26,12 @@ RocketChat.TabBar = new class
 		return data.get()
 
 	openFlex = (callback) ->
-		return if animating is true
 		toggleFlex 1, callback
 
 	closeFlex = (callback) ->
-		return if animating is true
 		toggleFlex -1, callback
 
 	toggleFlex = (status, callback) ->
-		return if animating is true
-		animating = true
-
 		if status is -1 or (status isnt 1 and open.get())
 			open.set false
 		else
@@ -44,9 +41,8 @@ RocketChat.TabBar = new class
 				open.set true
 			, 50
 		setTimeout ->
-			animating = false
 			callback?()
-		, 500
+		, if open.get() then 0 else 500
 
 	show = ->
 		$('.flex-tab-bar').show()
@@ -60,11 +56,17 @@ RocketChat.TabBar = new class
 
 	addButton = (config) ->
 		unless config?.id
-			throw new Meteor.Error "tabBar-addButton-error", "Button id was not informed."
+			return false
 
 		Tracker.nonreactive ->
 			btns = buttons.get()
 			btns[config.id] = config
+
+			if extraGroups[config.id]?
+				btns[config.id].groups ?= []
+				btns[config.id].groups = _.union btns[config.id].groups, extraGroups[config.id]
+				delete extraGroups[config.id]
+
 			buttons.set btns
 
 	removeButton = (id) ->
@@ -84,7 +86,6 @@ RocketChat.TabBar = new class
 		return _.sortBy (_.toArray buttons.get()), 'order'
 
 	reset = ->
-		animating = false
 		resetButtons()
 		closeFlex()
 		template.set ''
@@ -92,6 +93,23 @@ RocketChat.TabBar = new class
 
 	resetButtons = ->
 		buttons.set {}
+
+	showGroup = (group) ->
+		visibleGroup.set group
+
+	getVisibleGroup = ->
+		visibleGroup.get()
+
+	addGroup = (id, groups) ->
+		Tracker.nonreactive ->
+			btns = buttons.get()
+			if btns[id]
+				btns[id].groups ?= []
+				btns[id].groups = _.union btns[id].groups, groups
+				buttons.set btns
+			else
+				extraGroups[id] ?= []
+				extraGroups[id] = _.union extraGroups[id], groups
 
 	setTemplate: setTemplate
 	setData: setData
@@ -108,3 +126,7 @@ RocketChat.TabBar = new class
 	getButtons: getButtons
 	reset: reset
 	resetButtons: resetButtons
+
+	showGroup: showGroup
+	getVisibleGroup: getVisibleGroup
+	addGroup: addGroup

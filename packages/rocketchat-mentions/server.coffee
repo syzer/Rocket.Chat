@@ -7,16 +7,25 @@ class MentionsServer
 	constructor: (message) ->
 		# If message starts with /me, replace it for text formatting
 		mentions = []
-		message.msg.replace /(?:^|\s|\n)(?:@)([A-Za-z0-9-_.]+)/g, (match, mention) ->
+		msgMentionRegex = new RegExp '(?:^|\\s|\\n)(?:@)(' + RocketChat.settings.get('UTF8_Names_Validation') + ')', 'g'
+		message.msg.replace msgMentionRegex, (match, mention) ->
 			mentions.push mention
 		if mentions.length isnt 0
 			mentions = _.unique mentions
 			verifiedMentions = []
 			mentions.forEach (mention) ->
 				if mention is 'all'
-					verifiedMention =
-						_id: mention
-						username: mention
+					messageMaxAll = RocketChat.settings.get('Message_MaxAll')
+					if messageMaxAll > 0
+						allChannel = RocketChat.models.Rooms.findOneById message.rid
+						if allChannel.usernames.length <= messageMaxAll
+							verifiedMention =
+								_id: mention
+								username: mention
+					else
+						verifiedMention =
+							_id: mention
+							username: mention
 				else
 					verifiedMention = Meteor.users.findOne({username: mention}, {fields: {_id: 1, username: 1}})
 
@@ -25,7 +34,8 @@ class MentionsServer
 				message.mentions = verifiedMentions
 
 		channels = []
-		message.msg.replace /(?:^|\s|\n)(?:#)([A-Za-z0-9-_.]+)/g, (match, mention) ->
+		msgChannelRegex = new RegExp '(?:^|\\s|\\n)(?:#)(' + RocketChat.settings.get('UTF8_Names_Validation') + ')', 'g'
+		message.msg.replace msgChannelRegex, (match, mention) ->
 			channels.push mention
 
 		if channels.length isnt 0
@@ -39,4 +49,4 @@ class MentionsServer
 				message.channels = verifiedChannels
 		return message
 
-RocketChat.callbacks.add 'beforeSaveMessage', MentionsServer
+RocketChat.callbacks.add 'beforeSaveMessage', MentionsServer, RocketChat.callbacks.priority.HIGH

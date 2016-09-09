@@ -1,26 +1,20 @@
 Meteor.methods
 	canAccessRoom: (rid, userId) ->
-		console.log '[methods] canAccessRoom -> '.green, 'userId:', userId, 'rid:', rid
-
 		user = RocketChat.models.Users.findOneById userId, fields: username: 1
 
 		unless user?.username
-			throw new Meteor.Error 'not-logged-user', "[methods] canAccessRoom -> User doesn't have enough permissions"
+			throw new Meteor.Error 'error-invalid-user', 'Invalid user', { method: 'canAccessRoom' }
 
 		unless rid
-			throw new Meteor.Error 'invalid-room', '[methods] canAccessRoom -> Cannot access empty room'
+			throw new Meteor.Error 'error-invalid-room', 'Invalid room', { method: 'canAccessRoom' }
 
-		room = RocketChat.models.Rooms.findOneById rid, { fields: { usernames: 1, t: 1, name: 1 } }
+		room = RocketChat.models.Rooms.findOneById rid
 
 		if room
-			if room.t is 'c'
-				canAccess = true
-			else if room.usernames.indexOf(user.username) isnt -1
-				canAccess = true
-
-			if canAccess isnt true
-				return false
+			if RocketChat.authz.canAccessRoom.call(this, room, user)
+				room.username = user.username
+				return room
 			else
-				return _.pick room, ['_id', 't', 'name', 'usernames']
+				return false
 		else
-			throw new Meteor.Error 'invalid-room', '[methods] canAccessRoom -> Room ID is invalid'
+			throw new Meteor.Error 'error-invalid-room', 'Invalid room', { method: 'canAccessRoom' }

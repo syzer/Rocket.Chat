@@ -8,8 +8,10 @@ Package.describe({
 Package.onUse(function(api) {
 	api.versionsFrom('1.0');
 
-	api.use('rocketchat:lib@0.0.1');
+	api.use('rocketchat:lib');
 	api.use('coffeescript');
+
+	api.use('templating', 'client');
 
 	api.addFiles('adapter.js', 'client');
 	api.addFiles('WebRTCClass.coffee', 'client');
@@ -19,6 +21,3 @@ Package.onUse(function(api) {
 
 	api.export('WebRTC');
 });
-
-
-Package.onTest(function(api) {});
